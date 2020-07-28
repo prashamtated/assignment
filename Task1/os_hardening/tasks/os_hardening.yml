@@ -1,0 +1,97 @@
+---
+- name: "Verify sticky bit is set on all world-writable directories"
+  shell: set -o pipefail && df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d -perm -0002 2>/dev/null | xargs chmod a+t
+  changed_when: no
+  failed_when: no
+  #when: sticky_bit_on_worldwritable_dirs_audit.rc == '0'
+
+- name: "Verify IPv6 is disabled"
+  lineinfile:
+      dest: /etc/default/grub
+      regexp: '^(GRUB_CMDLINE_LINUX=.*(?!.*ipv6\.disable=1)\"[^\"]+)(\".*)'
+      line: '\1 ipv6.disable=1\2'
+      backrefs: yes
+  notify:
+      - grub2cfg
+
+- name: "Verify iptables is installed"
+  apt:
+      name: iptables
+      state: present
+
+- name: "Verify iptables is installed and started"
+  service:
+      name: iptables
+      state: started
+      enabled: yes
+  ignore_errors: True
+
+- name: "Verify HTTP server is not enabled"
+  service:
+      name: apache2
+      state: stopped
+      enabled: no
+
+- name: "Verify IMAP and POP3 server is not enabled"
+  service:
+      name: dovecot
+      state: stopped
+      enabled: no
+
+- name: "Verify telnet server is not enabled"
+  service:
+      name: telnet
+      state: stopped
+      enabled: no
+  ignore_errors: yes
+
+- name: "Verify IP forwarding is disabled"
+  sysctl:
+      name: net.ipv4.ip_forward
+      value: '0'
+      state: present
+      reload: yes
+      ignoreerrors: yes
+  notify:
+      - sysctl flush ipv4 route table
+
+- name: "Verify audit log storage size is configured"
+  lineinfile:
+      dest: /etc/audit/auditd.conf
+      regexp: "^max_log_file( |=)"
+      line: "max_log_file = 10"
+      state: present
+  notify: restart auditd
+  ignore_errors: yes
+
+- name: "Verify cron daemon is enabled"
+  service:
+      name: crond
+      enabled: yes
+  ignore_errors: yes
+
+- name: "Verify permissions on /etc/ssh/sshd_config are configured"
+  file:
+      dest: "{{ sshd_config }}" 
+      state: file
+      owner: root
+      group: root
+      mode: 0600
+
+- name: "Verify SSH root login is disabled"
+  lineinfile:
+      state: present
+      dest: "{{ sshd_config }}" 
+      regexp: '(?i)^PermitRootLogin'
+      line: 'PermitRootLogin no'
+      validate: /usr/sbin/sshd -t -f %s
+  notify: restart sshd
+
+- name: SSHD# Updating MaxAuthTries to 3
+  lineinfile:
+        backup: yes
+        state: present
+        dest: "{{ sshd_config }}"
+        regexp: '^MaxAuthTries'
+        line: 'MaxAuthTries 3'
+  notify: restart sshd

@@ -1,0 +1,6 @@
+---
+- hosts: localhost
+  sudo: true
+  roles:
+   - os_hardening
+   - prashamtated.os_hardening_ansible_role

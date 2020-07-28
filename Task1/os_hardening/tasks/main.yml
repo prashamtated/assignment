@@ -1,0 +1,5 @@
+---
+# tasks file for os_hardening
+
+- include: os_hardening.yml
+- include: apt_packages.yml

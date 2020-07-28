@@ -1,0 +1,6 @@
+---
+- name: install the latest version of Apache
+  apt: name=apache2 state=latest
+
+- name: remove the FTP package
+  apt: name=vsftpd state=absent

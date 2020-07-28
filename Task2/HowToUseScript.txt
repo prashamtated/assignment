@@ -1,0 +1,7 @@
+How to use script - 
+
+ub@CPDOF-VB:~$ ./jsonObjectCountFinder.py 810 ap-
+
+Number of object found by matching pattern:'ap-' in Object name and data created '810' days before are:'47'
+
+ub@CPDOF-VB:~$
